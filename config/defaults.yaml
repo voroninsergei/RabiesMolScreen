@@ -1,0 +1,9 @@
+# Default decisions
+ph: 7.4
+salts: ["NA", "CL", "MG", "CA", "K"]
+box:
+  center: [0.0, 0.0, 0.0]
+  size: [20.0, 20.0, 20.0]
+exhaustiveness: [8, 16]
+seeds: [42, 1337]
+keep_waters: []

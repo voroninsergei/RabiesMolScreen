@@ -1,27 +1,90 @@
 # RabiesMolScreen
 
-RabiesMolScreen is an open-source initiative to develop therapeutic options for symptomatic rabies by identifying blood–brain barrier (BBB) penetrating small-molecule inhibitors targeting the rabies virus (RABV) L (polymerase) and P (phosphoprotein) proteins.
+Pipeline for molecular screening against RABV (Rabies Virus) targets.
 
-## Goal
+## Overview
 
-To perform in-silico screening of drug-like molecules for their affinity to RABV targets and BBB permeability, followed by in-vitro validation.
+RabiesMolScreen is an open-source pipeline for virtual screening of small molecules against rabies virus proteins (e.g., L and P). It integrates molecular docking (AutoDock Vina), cheminformatics (RDKit), and optional ML rescoring.
 
-## Background
+## Quickstart (End-to-End Example)
 
-Rabies is almost always fatal once clinical symptoms appear, and no effective treatment exists today. One of the major obstacles is the blood–brain barrier, which limits delivery of therapeutic molecules to infected neurons. This project focuses on discovering small molecules that can cross the BBB and disrupt viral replication.
+```bash
+# 1. Setup environment
+mamba env create -f environment.yml
+mamba activate rabiesmol
 
-## Repository Structure
+# 2. Download example proteins (stubbed)
+make download
 
-- `scripts/` – Python tools for fetching protein structures, preparing ligands and running docking.
-- `docs/` – background documents, concept note and team information.
-- `data/` – (placeholder) input data such as PDB files and compound libraries.
-- `LICENSE` – license file (MIT License).
+# 3. Prepare proteins and ligands
+make prepare
 
-## Getting Started
+# 4. Run docking
+make dock
 
-1. Clone this repository.
-2. Install dependencies (e.g. RDKit, AutoDock Vina, DeepChem).
-3. Use `scripts/fetch_structures.py` to download RABV protein structures.
-4. Prepare ligand libraries and perform docking.
+# 5. Rescore (if implemented)
+make rescore
 
-Contributions and feedback are welcome. Please see `docs/concept.md` for an overview of the project roadmap.
+# 6. Generate report
+make report
+```
+
+### Expected Output
+
+- `data/proteins/` — input protein structures
+- `data/ligands/` — input ligands
+- `data/docking/` — docking results (.pdbqt)
+- `data/results/` — rescoring results (if available)
+- `reports/html/` — generated HTML reports
+
+## Makefile Targets
+
+| Target   | Description |
+|----------|-------------|
+| setup    | Install conda env |
+| download | Fetch proteins (stub) |
+| prepare  | Prepare proteins/ligands |
+| dock     | Run docking |
+| rescore  | Rescore results |
+| report   | Generate HTML report |
+| clean    | Clean intermediate files |
+
+## Dependencies
+
+See [`docs/concept.md`](docs/concept.md) for a roadmap and full dependency table.
+
+## License
+
+MIT
+
+
+## Target Proteins: RABV L and P
+
+The primary targets in this project are the **L** (RNA-dependent RNA polymerase) and **P** (phosphoprotein) proteins of the rabies virus (RABV).
+
+### Data Sources
+
+- **AlphaFold DB** — predicted protein structures for RABV proteins by UniProt IDs
+- **Protein Data Bank (PDB)** — experimentally solved structures (if available)
+
+Structures are stored with:
+- **FASTA** sequences
+- **PDB** coordinate files
+- **metadata.json** containing download date, UniProt ID, and source
+
+### Multiple Conformations
+
+The pipeline supports:
+- Different **domains** of the L protein (polymerase domains)
+- L–P complexes for interface docking
+
+See [`scripts/fetch_structures.py`](scripts/fetch_structures.py) for automated retrieval.
+
+
+## Defaults & Reproducibility
+
+Default decisions are tracked in `config/defaults.yaml` (pH, salts, grid box, exhaustiveness, seeds, structural waters). Edit this file to change project-wide defaults.
+
+## Privacy & Licensing
+
+All protein structures and compound examples are sourced from **public/open** databases (AlphaFold DB, UniProt; example ligands are simple SMILES provided here for demonstration). External tools/libraries (RDKit, OpenBabel, AutoDock Vina, fpocket, DeepChem, etc.) are used under their respective licenses; see their documentation for details.

@@ -1,22 +1,39 @@
-# Concept Note
+# RabiesMolScreen Concept
 
-## Objective
+## Roadmap
 
-Develop the first effective therapy for late‑stage (symptomatic) rabies by combining in‑silico screening of BBB‑penetrant small‑molecule inhibitors targeting the rabies virus (RABV) L and P proteins with rapid in‑vitro validation.
+1. **Protein Structure Retrieval** — Download or predict structures of RABV targets.
+2. **Ligand Preparation** — Standardize and protonate compounds.
+3. **Protein Preparation** — Remove waters, add hydrogens, convert to PDBQT.
+4. **Docking** — AutoDock Vina-based screening.
+5. **Rescoring** — ML-based rescoring (RF-Score, GNINA).
+6. **Filtering** — ADMET and CNS penetration filters.
+7. **Reporting** — Summary tables, plots, hit lists.
 
-## Rationale
+## Pipeline Diagram
 
-Current rabies infection is nearly always fatal once neurological symptoms appear; the virus quickly reaches the central nervous system and hides behind the blood–brain barrier (BBB). Traditional antiviral agents and monoclonal antibodies struggle to cross the BBB and reach infected neurons. Small molecules capable of crossing the BBB offer a complementary approach to antibody‑based therapies.
+```mermaid
+graph TD
+    A[Download Proteins] --> B[Prepare Proteins]
+    C[Prepare Ligands] --> D[Docking]
+    B --> D
+    D --> E[Rescoring]
+    E --> F[Filtering]
+    F --> G[Reporting]
+```
 
-## Key Tasks and Timeline (Year 1)
+## Dependency Table
 
-- **Target Identification:** Collect available structures of the RABV L polymerase and P phosphoprotein and build homology models if necessary.
-- **Library Preparation:** Compile drug‑like compound libraries (e.g. from ChEMBL, DrugBank) and filter for BBB permeability using metrics such as CNS MPO and logBB.
-- **Docking and Scoring:** Run high‑throughput docking using AutoDock Vina and machine‑learning scoring functions (DeepChem) to rank compounds.
-- **Selection of Hits:** Perform clustering and prioritization to select ~50 top‑scoring compounds for further testing.
-- **In Vitro Validation:** Evaluate selected compounds in neuronal cell culture infected with rabies virus to determine EC₅₀ values.
-- **Patenting and Reporting:** Assess the patent landscape and prepare filings for promising chemical scaffolds.
-
-## Repository Structure
-
-This repository contains code and documentation to support the computational part of the project. Laboratory protocols will be kept separately.
+| Tool / Library  | Version | Purpose |
+|-----------------|---------|---------|
+| RDKit           | 2023.03.3 | Cheminformatics |
+| OpenBabel       | 3.1.1 | File format conversion |
+| AutoDock Vina   | 1.2.5 | Docking |
+| DeepChem        | 2.7.1 | ML rescoring |
+| Pandas          | 2.1.4 | Data analysis |
+| NumPy           | 1.26.2 | Math |
+| scikit-learn    | 1.3.2 | ML utilities |
+| Matplotlib      | 3.8.2 | Plotting |
+| Seaborn         | 0.13.1 | Visualization |
+| Loguru          | 0.7.2 | Logging |
+| Pydantic        | 2.5.3 | Config validation |
