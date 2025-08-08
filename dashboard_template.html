@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RabiesMol Reproducibility Dashboard</title>
+<script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+<style>
+body { font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 20px; }
+.container { max-width: 1100px; margin: 0 auto; }
+.card { padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 16px; }
+h1 { margin-top: 0; }
+.footer { color:#6b7280; font-size: 12px; margin-top: 20px;}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Reproducibility Dashboard</h1>
+  <div class="card">
+    <label>Filter by platform: <select id="platformFilter"></select></label>
+    <label>Filter by Vina version: <select id="vinaFilter"></select></label>
+    <label>Filter by RDKit version: <select id="rdkitFilter"></select></label>
+  </div>
+  <div class="card">
+    <h3>Trend: Avg Std over Time</h3>
+    <div id="trend"></div>
+  </div>
+</div>
+<script>
+async function loadData() {
+  const resp = await fetch('history.csv');
+  const text = await resp.text();
+  const rows = text.trim().split('\n').map(r => r.split(','));
+  const header = rows.shift();
+  const idx = {};
+  header.forEach((h,i)=>idx[h]=i);
+  const data = rows.map(r => ({
+    id: r[idx['id']],
+    vina: r[idx['vina_version']],
+    rdkit: r[idx['rdkit_version']],
+    platform: r[idx['platform']],
+    mean: parseFloat(r[idx['mean_consensus']]),
+    std: parseFloat(r[idx['std_consensus']]),
+    date: r[idx['date']]
+  }));
+  const platforms = [...new Set(data.map(d=>d.platform))];
+  const vinaVers = [...new Set(data.map(d=>d.vina))];
+  const rdkitVers = [...new Set(data.map(d=>d.rdkit))];
+  const pfSel = document.getElementById('platformFilter');
+  platforms.forEach(p=>{ const opt=document.createElement('option'); opt.value=p; opt.textContent=p; pfSel.appendChild(opt); });
+  const vinaSel = document.getElementById('vinaFilter');
+  vinaVers.forEach(v=>{ const opt=document.createElement('option'); opt.value=v; opt.textContent=v; vinaSel.appendChild(opt); });
+  const rdkitSel = document.getElementById('rdkitFilter');
+  rdkitVers.forEach(v=>{ const opt=document.createElement('option'); opt.value=v; opt.textContent=v; rdkitSel.appendChild(opt); });
+
+  function updatePlot() {
+    const pf = pfSel.value, vf = vinaSel.value, rf = rdkitSel.value;
+    const filtered = data.filter(d => (!pf || d.platform===pf) && (!vf || d.vina===vf) && (!rf || d.rdkit===rf));
+    const byDate = {};
+    for (const rec of filtered) {
+      if (!byDate[rec.date]) byDate[rec.date] = [];
+      byDate[rec.date].push(rec.std);
+    }
+    const dates = Object.keys(byDate).sort();
+    const avgStd = dates.map(d => byDate[d].reduce((a,b)=>a+b,0)/byDate[d].length);
+    Plotly.newPlot('trend', [{
+      x: dates, y: avgStd, mode: 'lines+markers', name: 'Avg Std'
+    }], {xaxis:{title:'Date'}, yaxis:{title:'Avg Std'}, margin:{t:20}}, {displayModeBar:false});
+  }
+  pfSel.onchange = updatePlot;
+  vinaSel.onchange = updatePlot;
+  rdkitSel.onchange = updatePlot;
+  updatePlot();
+}
+loadData();
+</script>
+</body>
+</html>

@@ -266,3 +266,46 @@ The Pages dashboard now keeps **dated variance snapshots** in `history/` and bui
 **Suggestions for improvement:**
 - Add **per-platform/per-version** trend lines (multiple series).
 - Keep a **rolling window** (e.g., last 12 weeks) and compress older CSVs to `.gz` to reduce repo bloat.
+
+### Metadata in Trends
+
+The variance history now includes `vina_version`, `rdkit_version`, and `platform`, enabling filtering in the dashboard.
+
+**Suggestions for improvement:**
+- Add `git_commit` of the run for traceability.
+- Show multiple trend lines (different colors per platform/version) in one chart for direct comparison.
+
+### Metadata in Variance History
+
+The reproducibility history now stores **vina**, **rdkit**, and **platform** for each run and exposes **filters** on the dashboard.
+
+**Suggestions for improvement:**
+- Add **toolchain digest** (exact conda refs) to history for perfect provenance.
+- Export a compact **JSON** alongside CSV for faster client-side loading.
+
+### Provenance metadata
+
+Each variance snapshot now includes:
+- **git_sha** of the workflow run,
+- **image_id** (Docker image ID used for the mini run).
+
+**Suggestions for improvement:**
+- When pushing to a registry in the matrix, record the **OCI digest** (`repo@sha256:...`) for canonical provenance.
+- Attach the SLSA **attestation link** per run to the dashboard for one-click verification.
+
+
+## 📷 Screenshots
+
+**Dashboard Overview**  
+![Dashboard Placeholder](docs/images/dashboard_placeholder.png)
+
+**Trend Graph**  
+![Trend Placeholder](docs/images/trend_placeholder.png)
+
+### Auto-updated Screenshots
+
+The images in README are automatically replaced after a successful **Reproducibility Matrix** run with the latest artifacts (histogram and trend).
+
+**Suggestions for improvement:**
+- Store thumbnails with **content hashes** in filenames to avoid stale caches on GitHub CDN.
+- Add a safeguard requiring **manual approval** before committing to `main` if the diff is large.

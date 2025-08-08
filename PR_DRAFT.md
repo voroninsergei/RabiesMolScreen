@@ -33,3 +33,12 @@ Checklist:
 - [ ] CI green (lint + tests + smoke)
 - [ ] Docker image published to GHCR
 - [ ] Results generated and report produced
+
+
+## 📷 Screenshots
+
+**Dashboard Overview**  
+![Dashboard Placeholder](docs/images/dashboard_placeholder.png)
+
+**Trend Graph**  
+![Trend Placeholder](docs/images/trend_placeholder.png)
