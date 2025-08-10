@@ -1,75 +1,56 @@
+
+from __future__ import annotations
 from pathlib import Path
-from typing import Optional, List
-from loguru import logger
-import subprocess
+from typing import Optional, List, Dict
+from .logging_config import get_logger
 import pandas as pd
+import subprocess
 
-def run_vina(protein: Path, ligand: Path, out_dir: Path, exhaustiveness: int = 8, seed: int = 42) -> float:
+logger = get_logger(__name__)
+
+def _parse_vina_log(log_file: Path) -> float:
+    try:
+        for line in log_file.read_text(encoding="utf-8", errors="ignore").splitlines():
+            parts = line.split()
+            if len(parts) >= 2 and parts[0].isdigit():
+                return float(parts[1])
+    except Exception as e:
+        logger.warning(f"Failed to parse {log_file}: {e}")
+    return 0.0
+
+def _run_engine(exe: str, receptor: Path, ligand: Path, out_dir: Path, exhaustiveness: int, seed: Optional[int]) -> float:
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_file = out_dir / f"{ligand.stem}_vs_{protein.stem}_vina.pdbqt"
-    log_file = out_dir / f"{ligand.stem}_vs_{protein.stem}_vina.log"
-
-    if out_file.exists():
-        logger.info(f"Cached Vina result: {out_file}")
-        return parse_vina_score(log_file)
-
-    subprocess.run([
-        "vina",
-        "--receptor", str(protein),
+    out_pdbqt = out_dir / f"{ligand.stem}_{exe}.pdbqt"
+    log_file = out_dir / f"{ligand.stem}_{exe}.log"
+    cmd = [
+        exe,
+        "--receptor", str(receptor),
         "--ligand", str(ligand),
-        "--out", str(out_file),
+        "--out", str(out_pdbqt),
         "--log", str(log_file),
-        "--center_x", "0", "--center_y", "0", "--center_z", "0",
-        "--size_x", "20", "--size_y", "20", "--size_z", "20",
         "--exhaustiveness", str(exhaustiveness),
-        "--seed", str(seed)
-    ], check=True)
+    ]
+    if seed is not None:
+        cmd += ["--seed", str(seed)]
+    logger.debug(f"Running: {' '.join(cmd)}")
+    subprocess.run(cmd, check=True)
+    return _parse_vina_log(log_file)
 
-    return parse_vina_score(log_file)
+def run_vina(receptor: Path, ligand: Path, out_dir: Path, exhaustiveness: int = 8, seed: Optional[int] = None) -> float:
+    return _run_engine("vina", receptor, ligand, out_dir, exhaustiveness, seed)
 
-def run_smina(protein: Path, ligand: Path, out_dir: Path, exhaustiveness: int = 8, seed: int = 42) -> float:
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_file = out_dir / f"{ligand.stem}_vs_{protein.stem}_smina.pdbqt"
-    log_file = out_dir / f"{ligand.stem}_vs_{protein.stem}_smina.log"
+def run_smina(receptor: Path, ligand: Path, out_dir: Path, exhaustiveness: int = 8, seed: Optional[int] = None) -> float:
+    return _run_engine("smina", receptor, ligand, out_dir, exhaustiveness, seed)
 
-    if out_file.exists():
-        logger.info(f"Cached smina result: {out_file}")
-        return parse_vina_score(log_file)
+def consensus_docking(receptor: Path, ligand: Path, out_dir: Path, exhaustiveness: int = 8, seed: Optional[int] = None) -> Dict[str, float]:
+    v = run_vina(receptor, ligand, out_dir, exhaustiveness, seed)
+    s = run_smina(receptor, ligand, out_dir, exhaustiveness, seed)
+    return {"vina": v, "smina": s, "consensus": (v + s) / 2.0}
 
-    subprocess.run([
-        "smina",
-        "--receptor", str(protein),
-        "--ligand", str(ligand),
-        "--out", str(out_file),
-        "--log", str(log_file),
-        "--center_x", "0", "--center_y", "0", "--center_z", "0",
-        "--size_x", "20", "--size_y", "20", "--size_z", "20",
-        "--exhaustiveness", str(exhaustiveness),
-        "--seed", str(seed)
-    ], check=True)
-
-    return parse_vina_score(log_file)
-
-def parse_vina_score(log_file: Path) -> float:
-    score = None
-    with open(log_file, "r") as f:
-        for line in f:
-            if line.strip().startswith("1 "):  # First mode
-                try:
-                    score = float(line.split()[1])
-                    break
-                except:
-                    pass
-    if score is None:
-        logger.warning(f"No score found in {log_file}")
-        return 0.0
-    return score
-
-def consensus_docking(protein: Path, ligand: Path, out_dir: Path) -> dict:
-    vina_score = run_vina(protein, ligand, out_dir)
-    smina_score = run_smina(protein, ligand, out_dir)
-    return {
-        "vina_score": vina_score,
-        "smina_score": smina_score,
-        "consensus": (vina_score + smina_score) / 2
-    }
+def run_docking_batch(protein: Path, ligands_dir: Path, out_dir: Path) -> pd.DataFrame:
+    ligands = sorted([p for p in Path(ligands_dir).glob('*.sdf')] + [p for p in Path(ligands_dir).glob('*.pdbqt')])
+    records = []
+    for lig in ligands:
+        score = run_vina(protein, lig, out_dir)
+        records.append({"protein": protein.name, "ligand": lig.name, "vina_score": score})
+    return pd.DataFrame.from_records(records)

@@ -1,0 +1,72 @@
+[
+  {
+    "ligand_id": "lig0",
+    "receptor": "egfr.pdb",
+    "score": -10.0,
+    "rmsd": 0.5,
+    "pose_path": "pose_0.pdbqt"
+  },
+  {
+    "ligand_id": "lig1",
+    "receptor": "egfr.pdb",
+    "score": -9.9,
+    "rmsd": 0.5,
+    "pose_path": "pose_1.pdbqt"
+  },
+  {
+    "ligand_id": "lig2",
+    "receptor": "egfr.pdb",
+    "score": -9.8,
+    "rmsd": 0.5,
+    "pose_path": "pose_2.pdbqt"
+  },
+  {
+    "ligand_id": "lig3",
+    "receptor": "egfr.pdb",
+    "score": -9.7,
+    "rmsd": 0.5,
+    "pose_path": "pose_3.pdbqt"
+  },
+  {
+    "ligand_id": "lig4",
+    "receptor": "egfr.pdb",
+    "score": -9.6,
+    "rmsd": 0.5,
+    "pose_path": "pose_4.pdbqt"
+  },
+  {
+    "ligand_id": "lig5",
+    "receptor": "egfr.pdb",
+    "score": -9.5,
+    "rmsd": 0.5,
+    "pose_path": "pose_5.pdbqt"
+  },
+  {
+    "ligand_id": "lig6",
+    "receptor": "egfr.pdb",
+    "score": -9.4,
+    "rmsd": 0.5,
+    "pose_path": "pose_6.pdbqt"
+  },
+  {
+    "ligand_id": "lig7",
+    "receptor": "egfr.pdb",
+    "score": -9.3,
+    "rmsd": 0.5,
+    "pose_path": "pose_7.pdbqt"
+  },
+  {
+    "ligand_id": "lig8",
+    "receptor": "egfr.pdb",
+    "score": -9.2,
+    "rmsd": 0.5,
+    "pose_path": "pose_8.pdbqt"
+  },
+  {
+    "ligand_id": "lig9",
+    "receptor": "egfr.pdb",
+    "score": -9.1,
+    "rmsd": 0.5,
+    "pose_path": "pose_9.pdbqt"
+  }
+]

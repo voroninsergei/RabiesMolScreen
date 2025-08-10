@@ -1,29 +1,17 @@
-ENV_NAME = rabiesmol
 
-.PHONY: setup download prepare dock rescore report clean
-
-setup:
-	mamba env create -f environment.yml || mamba env update -f environment.yml
-	echo "Activate with: mamba activate $(ENV_NAME)"
-
-download:
-	python scripts/fetch_structures.py --output data/proteins
-
+.PHONY: prepare dock rescore report report-html validate-config doctor snapshot
 prepare:
-	python scripts/prepare_inputs.py --proteins data/proteins --ligands data/ligands
-
+	python -m rabiesmol.cli prepare --proteins data/protein --ligands data/ligands --out-proteins data/prepared/proteins --out-ligands data/prepared/ligands --seed 0 --track
 dock:
-	python scripts/run_docking.py --proteins data/proteins --ligands data/ligands --out data/docking
-
+	python -m rabiesmol.cli dock data/protein/receptor.pdbqt data/prepared/ligands --out-csv outputs/scores.csv
 rescore:
-	python scripts/rescore.py --input data/docking --out data/rescored
-
+	python -m rabiesmol.cli rescore-cmd outputs/scores.csv --out-csv outputs/rescored.csv --experimental
 report:
-	jupyter nbconvert --execute reports/top_hits.ipynb --to html --output-dir reports/html
-
-clean:
-	rm -rf data/docking/* data/rescored/* reports/html/*
-
-# Save standardized parquet after rescoring
-rescore-parquet:
-	python -c "from pathlib import Path; from rabiesmol.rescoring import rescore_to_parquet; rescore_to_parquet(Path('data/docking/results.csv'), Path('data/results/results.parquet'))"
+	python -m rabiesmol.cli report outputs/scores.csv --out-html reports/report.html
+report-html: report
+validate-config:
+	python -m rabiesmol.cli validate-config config/example.yaml
+doctor:
+	python -m rabiesmol.cli doctor
+snapshot:
+	python -m rabiesmol.cli snapshot --note "local"

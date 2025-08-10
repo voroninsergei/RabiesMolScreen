@@ -1,10 +1,16 @@
 # Ruff configuration
 line-length = 100
-target-version = "py310"
+target-version = "py311"
 
 [lint]
-select = ["E", "F", "I", "B", "UP"]
-ignore = ["E203", "W503"]
+select = ["E","F","I","B","UP","SIM","PL","RUF","PERF"]
+ignore = ["E203","W503"]
+fixable = ["ALL"]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
 
 [lint.isort]
-known-third-party = ["rdkit", "pydantic", "loguru", "pandas", "numpy"]
+known-third-party = ["rdkit","pydantic","loguru","pandas","numpy","jinja2","typer"]
