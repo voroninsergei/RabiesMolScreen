@@ -1,9 +1,10 @@
-typer~=\2
-pydantic>=2
-pandas~=\2
-numpy~=\2
-jinja2~=\2
-nbconvert~=\2
-pyyaml~=\2
-loguru~=\2
-pyarrow~=\2
+# Зависимости для CLI/runtime с фиксированными версиями.
+typer~=0.9
+pydantic~=2.0
+pandas~=2.2
+numpy~=1.26
+jinja2~=3.1
+nbconvert~=7.0
+pyyaml~=6.0
+loguru~=0.7
+pyarrow~=15.0
