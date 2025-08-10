@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 from pathlib import Path
 import pandas as pd
@@ -11,31 +12,48 @@ DEFAULT_TEMPLATE = """
 <html>
 <head>
 <meta charset='utf-8'><title>rabiesmol report</title>
+{% if embed %}
+<style>
+table { border-collapse: collapse; width: 100%; font-family: ui-sans-serif, system-ui; }
+th, td { border: 1px solid #e5e7eb; padding: 6px; font-size: 14px; }
+th { background: #f3f4f6; text-align: left; }
+</style>
+{% else %}
 <link rel="stylesheet" href="https://cdn.datatables.net/2.0.3/css/dataTables.dataTables.min.css">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/2.0.3/js/dataTables.min.js"></script>
-<style> body{font-family: system-ui, sans-serif; padding: 1rem;} table{width:100%;} </style>
+{% endif %}
 </head>
 <body>
-<h1>rabiesmol: docking summary</h1>
-<p>Total records: {{ n }} | Snapshot: <a href="../snapshot/manifest.json">manifest.json</a></p>
-<table id="hits" class="display">
-<thead><tr><th>Ligand</th><th>Vina score</th></tr></thead>
+<h2>RabiesMol — docking hits (n={{n}})</h2>
+{% if embed %}
+<table>
+<thead><tr>{% for k in header %}<th>{{k}}</th>{% endfor %}</tr></thead>
 <tbody>
-{% for r in rows %}
-<tr><td>{{ r['ligand'] }}</td><td>{{ '%.3f'|format(r['vina_score']) }}</td></tr>
-{% endfor %}
-</tbody>
-</table>
+{% for r in rows %}<tr>{% for k in header %}<td>{{r.get(k)}}</td>{% endfor %}</tr>{% endfor %}
+</tbody></table>
+{% else %}
+<table id='t' class='display' style='width:100%'></table>
 <script>
-new DataTable('#hits', {paging: true, searching: true, order:[[1,'asc']]});
+const rows = {{ rows|tojson }};
+const header = Object.keys(rows[0] || {});
+$(document).ready(function() {
+  $('#t').DataTable({
+    data: rows,
+    columns: header.map(h => ({title: h, data: h})),
+    pageLength: 25
+  });
+});
 </script>
-</body></html>
+{% endif %}
+</body>
+</html>
 """
 
-def generate_report(in_csv: Path, out_html: Path, template: str | None = None) -> None:
-    # Accept CSV or Parquet
-    if in_csv.suffix.lower() in {'.parquet', '.pq'}:
+def generate_report(in_csv: Path, out_html: Path, template: str | None = None, embed_assets: bool = False) -> None:
+    """Generate interactive (CDN) or fully-embedded HTML report."""
+    in_csv = Path(in_csv)
+    if in_csv.suffix == ".parquet":
         df = pd.read_parquet(in_csv)
     else:
         df = pd.read_csv(in_csv)
@@ -46,7 +64,8 @@ def generate_report(in_csv: Path, out_html: Path, template: str | None = None) -
         except Exception:
             pass
     tpl = Template(template or DEFAULT_TEMPLATE)
-    html = tpl.render(n=len(df), rows=df.to_dict(orient="records"))
+    header = list(df.columns)
+    html = tpl.render(n=len(df), rows=df.to_dict(orient="records"), header=header, embed=embed_assets)
     out_html.parent.mkdir(parents=True, exist_ok=True)
     out_html.write_text(html, encoding="utf-8")
     logger.info(f"Report generated -> {out_html}")

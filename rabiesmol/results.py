@@ -2,13 +2,11 @@
 import json
 from pathlib import Path
 import pandas as pd
+from .results_schema import RESULT_COLUMNS, SCHEMA_VERSION, write_sidecar
 from loguru import logger
 
-SCHEMA_VERSION = "v1"
-RESULT_COLUMNS = [
-    "id", "smiles", "vina_score", "smina_score", "consensus",
-    "rfscore_vs", "gnina_score", "cns_mpo", "bbb_pred", "pains_flag", "alerts"
-]
+SCHEMA_VERSION = "1.0"
+RESULT_COLUMNS = RESULT_COLUMNS
 
 def to_parquet(df: pd.DataFrame, out_path: Path):
     # ensure all expected columns exist

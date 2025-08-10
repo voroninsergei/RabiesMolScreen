@@ -1,5 +1,6 @@
+
 from __future__ import annotations
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 from multiprocessing import cpu_count
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,15 +11,11 @@ import hashlib, json, threading
 class Limits:
     threads: int = max(1, (cpu_count() or 2) - 1)
     max_mem_mb: int | None = None
-
-def _hash_key(record: dict) -> str:
-    dump = json.dumps(record, sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(dump.encode("utf-8")).hexdigest()
+    pool: str = "thread"  # 'thread' or 'process'
 
 class SimpleCache:
     def __init__(self, root: Path):
-        self.root = Path(root)
-        self.root.mkdir(parents=True, exist_ok=True)
+        self.root = Path(root); self.root.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
 
     def _path(self, key: str) -> Path:
@@ -26,21 +23,23 @@ class SimpleCache:
 
     def get(self, key: str):
         p = self._path(key)
-        if not p.exists():
-            return None
+        if not p.exists(): return None
         try:
             with p.open("r", encoding="utf-8") as f:
-                return json.load(f)
+                import json; return json.load(f)
         except Exception:
             return None
 
     def put(self, key: str, value) -> None:
         p = self._path(key)
-        tmp = p.with_suffix(".tmp")
         with self._lock:
-            with tmp.open("w", encoding="utf-8") as f:
-                json.dump(value, f, indent=2)
-            tmp.replace(p)
+            with p.with_suffix(".tmp").open("w", encoding="utf-8") as f:
+                import json; json.dump(value, f, indent=2)
+            p.with_suffix(".tmp").replace(p)
+
+def _hash_key(record: dict) -> str:
+    dump = json.dumps(record, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(dump.encode("utf-8")).hexdigest()
 
 def parallel_map(
     items: Iterable,
@@ -54,8 +53,8 @@ def parallel_map(
     failures: list[tuple[Any, str]] = []
     futs: dict = {}
     key_fn = key_fn or (lambda it: it if isinstance(it, dict) else {"it": str(it)})
-
-    with ThreadPoolExecutor(max_workers=limits.threads) as ex:
+    Exec = ProcessPoolExecutor if (limits.pool == "process") else ThreadPoolExecutor
+    with Exec(max_workers=limits.threads) as ex:
         for it in items:
             key = _hash_key(key_fn(it)) if cache else None
             if cache and key:

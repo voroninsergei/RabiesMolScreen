@@ -1,0 +1,1 @@
+Copy content from `docs/Config.md`.
