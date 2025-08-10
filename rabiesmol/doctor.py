@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 import shutil, subprocess, json, platform, os
 from typing import Dict
@@ -16,14 +15,13 @@ def _bin_info(name: str) -> Dict[str, str | None]:
 
 def run_doctor() -> dict:
     info = {
-        "python": platform.python_version(),
         "platform": platform.platform(),
-        "bins": {
+        "python": platform.python_version(),
+        "binaries": {
+            "vina": _bin_info("vina"),
             "smina": _bin_info("smina"),
             "fpocket": _bin_info("fpocket"),
             "gnina": _bin_info("gnina"),
-            
-            "vina": _bin_info("vina"),
             "obabel": _bin_info("obabel"),
             "nvidia-smi": _bin_info("nvidia-smi"),
             "cuda": _bin_info("cuda"),

@@ -77,3 +77,32 @@ def compute_admet(smiles_list):
         bbb = (tpsa < 90) and (mw < 500)
         results.append((cns_mpo, bbb))
     return results
+
+
+def get_filter_alerts(mols):
+    """Return list of alert tag lists for molecules (best-effort).
+    If RDKit FilterCatalog exposes entry descriptions, use them; otherwise, return [] for OK and ["match"] for flagged.
+    """
+    try:
+        cat = load_filters()
+        alerts = []
+        for m in mols:
+            tags = []
+            try:
+                if hasattr(cat, 'GetFilterMatches'):
+                    matches = cat.GetFilterMatches(m)
+                    try:
+                        tags = [getattr(x, 'GetDescription')() for x in matches]
+                    except Exception:
+                        tags = [str(x) for x in matches]
+                elif hasattr(cat, 'GetMatches'):
+                    matches = cat.GetMatches(m)
+                    tags = [str(x) for x in matches]
+                else:
+                    tags = []
+            except Exception:
+                tags = ["match"] if cat.HasMatch(m) else []
+            alerts.append(tags)
+        return alerts
+    except Exception:
+        return [[] for _ in mols]

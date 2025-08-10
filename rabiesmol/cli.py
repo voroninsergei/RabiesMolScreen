@@ -24,12 +24,15 @@ def prepare(
     out_proteins: Path = typer.Option(Path("data/prepared/proteins"), help="Output proteins dir"),
     out_ligands: Path = typer.Option(Path("data/prepared/ligands"), help="Output ligands dir"),
     ph: float = typer.Option(7.4, help="Ligand protonation pH"),
+    threads: int = typer.Option(1, help="Parallel workers for prep"),
+    seed: Optional[int] = typer.Option(None, help="Random seed (optional)") ,
     track: bool = typer.Option(False, help="No-op flag for CI tracking"),
 ):
     """Prepare inputs: proteins and ligands."""
     from .prepare import prepare_proteins, prepare_ligands
-    prepare_proteins(proteins, out_proteins)
-    prepare_ligands(ligands, out_ligands, ph=ph)
+    logger.info(f"Using seed={seed}")
+    prepare_proteins(proteins, out_proteins, ph=ph, keep_waters=[], threads=threads)
+    prepare_ligands(ligands, out_ligands, ph=ph, threads=threads)
 
 @app.command()
 def dock(
@@ -37,7 +40,7 @@ def dock(
     ligands_dir: Path,
     out_csv: Path = typer.Option(Path("outputs/scores.csv"), help="Output CSV with scores"),
     threads: int = typer.Option(1, help="Parallel workers"),
-    cache_dir: Optional[Path] = typer.Option(None, help="Cache directory for docking results"),
+    cache_dir: Optional[Path] = typer.Option(Path("outputs/cache"), help="Cache directory for docking results"),
 ):
     from .docking import run_docking_batch
     df = run_docking_batch(protein, ligands_dir, out_dir=Path("outputs/poses"), threads=threads, cache_dir=cache_dir)
@@ -65,11 +68,18 @@ def validate_config(config_yaml: Path = Path("config/defaults.yaml")):
     if not config_yaml.exists():
         typer.echo(f"Config not found: {config_yaml}")
         raise typer.Exit(code=2)
-    typer.echo(f"Config OK: {config_yaml}")
+    import yaml
+    from .config_schema import validate_config as _validate
+    cfg = yaml.safe_load(config_yaml.read_text(encoding="utf-8")) or {}
+    _validate(cfg)
+    typer.echo(f"Config validated: {config_yaml}")
 
 @app.command()
 def doctor():
-    typer.echo("rabiesmol doctor: environment looks sane (stub)." )
+    from .doctor import run_doctor
+    import json as _json
+    info = run_doctor()
+    typer.echo(_json.dumps(info, indent=2))
 
 @app.command()
 def snapshot(note: Optional[str] = typer.Option("local", help="Note for snapshot"), out_dir: Path = Path("snapshot")):

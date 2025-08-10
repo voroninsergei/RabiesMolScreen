@@ -33,8 +33,18 @@ def rescore_to_parquet(docking_results_csv: Path, out_parquet: Path, experimenta
         df["bbb_pred"] = [b for a, b in admet]
         mols = [Chem.MolFromSmiles(s or "") for s in df.get("smiles", [])]
         df["pains_flag"] = apply_filters(mols)
+        try:
+            from rabiesmol.validation import get_filter_alerts
+            df["alerts"] = [json.dumps(a) for a in get_filter_alerts(mols)]
+        except Exception:
+            pass
     except Exception as e:
         logger.warning(f"ADMET/PAINS skipped: {e}")
+        df["pains_flag"] = "skipped"
+        try:
+            out_parquet.with_suffix(".meta.json").write_text(json.dumps({"admet": "skipped"}, indent=2), encoding="utf-8")
+        except Exception:
+            pass
     to_parquet(df, out_parquet)
     logger.info(f"Saved parquet -> {out_parquet}")
 

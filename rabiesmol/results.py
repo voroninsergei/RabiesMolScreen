@@ -1,3 +1,4 @@
+
 import json
 from pathlib import Path
 import pandas as pd
@@ -7,20 +8,6 @@ SCHEMA_VERSION = "v1"
 RESULT_COLUMNS = [
     "id", "smiles", "vina_score", "smina_score", "consensus",
     "rfscore_vs", "gnina_score", "cns_mpo", "bbb_pred", "pains_flag", "alerts"
-]
-
-RESULT_COLUMNS = [
-    "id",
-    "smiles",
-    "vina_score",
-    "smina_score",
-    "consensus",
-    "rfscore_vs",
-    "gnina_score",
-    "cns_mpo",
-    "bbb_pred",
-    "pains_flag",
-    "alerts"
 ]
 
 def to_parquet(df: pd.DataFrame, out_path: Path):

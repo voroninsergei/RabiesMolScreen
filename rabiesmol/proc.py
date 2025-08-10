@@ -13,9 +13,16 @@ class ExternalRunError(RuntimeError):
         self.stdout = stdout
         self.stderr = stderr
 
+class ExternalTimeout(ExternalRunError):
+    pass
+
 def run(cmd: List[str], timeout: int = 600) -> subprocess.CompletedProcess:
-    logger.debug("Running: %s", " ".join(cmd))
-    res = subprocess.run(cmd, check=False, text=True, capture_output=True, timeout=timeout)
+    cmd_str = ' '.join(cmd)
+    logger.debug("Running: %s", cmd_str)
+    try:
+        res = subprocess.run(cmd, check=False, text=True, capture_output=True, timeout=timeout)
+    except subprocess.TimeoutExpired as e:
+        raise ExternalTimeout(cmd, -9, e.stdout or "", e.stderr or "") from e
     if res.returncode != 0:
         raise ExternalRunError(cmd, res.returncode, res.stdout or "", res.stderr or "")
     return res

@@ -1,24 +1,16 @@
-# Contributing to RabiesMolScreen
+# Руководство по вкладу
 
-Thank you for your interest in contributing!
+Спасибо за интерес к проекту!
 
-### How to contribute
+## Как предложить изменения
+1. Сделайте форк и новую ветку `feature/<кратко>`.
+2. Убедитесь, что `pytest` и линтеры проходят локально.
+3. Откройте PR с понятным описанием.
 
-1. **Fork the repository** and create a new branch from `main` for your changes.
-2. Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages.
-3. Follow [PEP 8](https://peps.python.org/pep-0008/) coding style for Python scripts.
-4. Add or update documentation in the `docs/` directory as needed.
-5. For new features, add unit tests where appropriate.
-6. Submit a Pull Request (PR) describing your changes and link any relevant issues.
+## Код‑стайл
+- Python ≥3.9, типы приветствуются.
+- Форматирование: `black`/`ruff` (см. dev‑requirements).
+- Тесты: `pytest` (`tests/`).
 
-### Code of conduct
-
-Please be respectful and professional in your interactions. We follow the [Contributor Covenant](https://www.contributor-covenant.org/version/2/1/code_of_conduct/).
-
-### Issue Reporting
-
-If you find a bug or have a feature request, open an issue with a clear description and steps to reproduce or proposed solutions.
-
-### Licensing
-
-By contributing, you agree that your contributions will be licensed under the project’s MIT license.
+## Коммиты
+Используйте осмысленные сообщения, например: `fix: robust vina log parser`.

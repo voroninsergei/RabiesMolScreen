@@ -1,9 +1,12 @@
-
+# Минимальный runtime-образ
 FROM python:3.11-slim
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
-COPY requirements-runtime.txt /tmp/req.txt
-RUN pip install --no-cache-dir -r /tmp/req.txt
-COPY . /app
-CMD ["python","-m","rabiesmol.cli","--help"]
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Внешние бинарники (vina/smina/obabel) сюда не ставим — зависят от платформы.
+COPY . .
+
+# Smoke-команда по умолчанию
+CMD ["python", "-m", "rabiesmol.cli", "--help"]

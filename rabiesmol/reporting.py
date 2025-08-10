@@ -34,7 +34,17 @@ new DataTable('#hits', {paging: true, searching: true, order:[[1,'asc']]});
 """
 
 def generate_report(in_csv: Path, out_html: Path, template: str | None = None) -> None:
-    df = pd.read_csv(in_csv)
+    # Accept CSV or Parquet
+    if in_csv.suffix.lower() in {'.parquet', '.pq'}:
+        df = pd.read_parquet(in_csv)
+    else:
+        df = pd.read_csv(in_csv)
+        # Save Parquet twin for convenience
+        try:
+            from .results import to_parquet
+            to_parquet(df.copy(), in_csv.with_suffix('.parquet'))
+        except Exception:
+            pass
     tpl = Template(template or DEFAULT_TEMPLATE)
     html = tpl.render(n=len(df), rows=df.to_dict(orient="records"))
     out_html.parent.mkdir(parents=True, exist_ok=True)

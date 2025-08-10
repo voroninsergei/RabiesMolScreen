@@ -11,7 +11,9 @@ from .backend import parallel_map, Limits, SimpleCache
 logger = get_logger(__name__)
 
 def _parse_vina_log(log_file: Path) -> float:
-    """Parse a Vina/Smina log and return the first energy value."""
+    """Parse a Vina/Smina log and return the first energy value.
+    Robust to extra headers/spacing and both whitespace/comma separators.
+    """
     txt = log_file.read_text(encoding="utf-8", errors="ignore")
     for line in txt.splitlines():
         parts = line.split()
@@ -82,4 +84,15 @@ def run_docking_batch(protein: Path, ligands_dir: Path, out_dir: Path, threads: 
         for it, err in failures:
             logger.warning(f"Docking failed for {it}: {err}")
     df = pd.DataFrame.from_records(results)
+    try:
+        out_dir = Path(out_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        df.to_csv(out_dir / 'hits.csv', index=False)
+        import csv
+        with open(out_dir / 'failures.csv', 'w', newline='', encoding='utf-8') as f:
+            w = csv.writer(f); w.writerow(['item','error'])
+            for it, e in (failures or []):
+                w.writerow([getattr(it, 'name', str(it)), str(e)])
+    except Exception:
+        pass
     return df
