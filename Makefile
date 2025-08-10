@@ -1,7 +1,6 @@
-
 .PHONY: prepare dock rescore report report-html validate-config doctor snapshot
 prepare:
-	python -m rabiesmol.cli prepare --proteins data/protein --ligands data/ligands --out-proteins data/prepared/proteins --out-ligands data/prepared/ligands --seed 0 --track
+	python -m rabiesmol.cli prepare --proteins data/proteins --ligands examples --track
 dock:
 	python -m rabiesmol.cli dock data/protein/receptor.pdbqt data/prepared/ligands --out-csv outputs/scores.csv
 rescore:

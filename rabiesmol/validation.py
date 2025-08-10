@@ -2,17 +2,17 @@ from pathlib import Path
 import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors, DataStructs
-from rdkit.Chem import FilterCatalog, FilterCatalogParams
+from rdkit.Chem.FilterCatalog import FilterCatalog, FilterCatalogParams
 from .logging_config import get_logger
 
 logger = get_logger(__name__)
 
-def load_filters() -> FilterCatalog.FilterCatalog:
+def load_filters() -> FilterCatalog:
     params = FilterCatalogParams()
     params.AddCatalog(FilterCatalogParams.FilterCatalogs.PAINS)
     params.AddCatalog(FilterCatalogParams.FilterCatalogs.BRENK)
     params.AddCatalog(FilterCatalogParams.FilterCatalogs.LILLY)
-    return FilterCatalog.FilterCatalog(params)
+    return FilterCatalog(params)
 
 def apply_filters(mols):
     cat = load_filters()

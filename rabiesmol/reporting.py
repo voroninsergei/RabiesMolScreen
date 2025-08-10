@@ -6,20 +6,37 @@ from .logging_config import get_logger
 
 logger = get_logger(__name__)
 
-TEMPLATE_FILE = Path('dashboard_template.html')
 DEFAULT_TEMPLATE = """
 <!doctype html>
-<html><head><meta charset='utf-8'><title>rabiesmol report</title></head>
+<html>
+<head>
+<meta charset='utf-8'><title>rabiesmol report</title>
+<link rel="stylesheet" href="https://cdn.datatables.net/2.0.3/css/dataTables.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/2.0.3/js/dataTables.min.js"></script>
+<style> body{font-family: system-ui, sans-serif; padding: 1rem;} table{width:100%;} </style>
+</head>
 <body>
 <h1>rabiesmol: docking summary</h1>
-<p>Total poses: {{ n }}</p>
-{{ table }}
+<p>Total records: {{ n }} | Snapshot: <a href="../snapshot/manifest.json">manifest.json</a></p>
+<table id="hits" class="display">
+<thead><tr><th>Ligand</th><th>Vina score</th></tr></thead>
+<tbody>
+{% for r in rows %}
+<tr><td>{{ r['ligand'] }}</td><td>{{ '%.3f'|format(r['vina_score']) }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+<script>
+new DataTable('#hits', {paging: true, searching: true, order:[[1,'asc']]});
+</script>
 </body></html>
 """
 
-def generate_report(scores_csv: Path, out_html: Path) -> Path:
-    df = pd.read_csv(scores_csv)
-    html_table = df.sort_values('vina_score').to_html(index=False)
-    html = Template(TEMPLATE_FILE.read_text(encoding='utf-8') if TEMPLATE_FILE.exists() else DEFAULT_TEMPLATE).render(n=len(df), table=html_table)
-    out_html.write_text(html, encoding='utf-8')
-    return out_html
+def generate_report(in_csv: Path, out_html: Path, template: str | None = None) -> None:
+    df = pd.read_csv(in_csv)
+    tpl = Template(template or DEFAULT_TEMPLATE)
+    html = tpl.render(n=len(df), rows=df.to_dict(orient="records"))
+    out_html.parent.mkdir(parents=True, exist_ok=True)
+    out_html.write_text(html, encoding="utf-8")
+    logger.info(f"Report generated -> {out_html}")

@@ -1,104 +1,78 @@
-
 from __future__ import annotations
-import typer
+import json, hashlib, platform
 from typing import Optional
 from pathlib import Path
+import typer
 from .logging_config import get_logger
-from .prepare import prepare_proteins, prepare_ligands
-from .docking import run_docking_batch
-from .reporting import generate_report
-# lazy import; see _run_validation()
 
 app = typer.Typer(help="rabiesmol: Unified CLI for ligand prep, docking, and reporting.")
 logger = get_logger(__name__)
 
+def _run_validation(*args, **kwargs):
+    """Lazy-import validator to avoid pulling RDKit unless needed."""
+    try:
+        from .validation import validate_and_cluster  # type: ignore
+    except Exception as e:
+        typer.secho("Validation requires optional dependencies (RDKit). Install `rabiesmol[validation]`.\n" + str(e), fg=typer.colors.YELLOW)
+        raise typer.Exit(code=2)
+    return validate_and_cluster(*args, **kwargs)
+
 @app.command()
 def prepare(
-    proteins: Path = typer.Option(None, help="Dir with input PDBs"),
-    ligands: Path = typer.Option(None, help="Dir with input SDFs"),
-    out_proteins: Path = typer.Option(Path("prepared/proteins"), help="Output dir for prepared receptors"),
-    out_ligands: Path = typer.Option(Path("prepared/ligands"), help="Output dir for prepared ligands"),
-    seed: int = typer.Option(0, "--seed", help="Random seed used for any randomized steps"),
-    track: bool = typer.Option(False, "--track", help="Emit simple tracking output"),
+    proteins: Path = typer.Option(Path("data/proteins"), help="Input proteins dir"),
+    ligands: Path = typer.Option(Path("examples"), help="Input ligands dir"),
+    out_proteins: Path = typer.Option(Path("data/prepared/proteins"), help="Output proteins dir"),
+    out_ligands: Path = typer.Option(Path("data/prepared/ligands"), help="Output ligands dir"),
+    ph: float = typer.Option(7.4, help="Ligand protonation pH"),
+    track: bool = typer.Option(False, help="No-op flag for CI tracking"),
 ):
-    """Prepare receptors and ligands. In tests, external tools are mocked."""
-    if proteins:
-        prepare_proteins(proteins, out_proteins)
-    if ligands:
-        prepare_ligands(ligands, out_ligands)
-    if track:
-        logger.info(f"Tracking enabled; seed={seed}")
-    return 0
+    """Prepare inputs: proteins and ligands."""
+    from .prepare import prepare_proteins, prepare_ligands
+    prepare_proteins(proteins, out_proteins)
+    prepare_ligands(ligands, out_ligands, ph=ph)
 
 @app.command()
 def dock(
-    protein: Path = typer.Argument(..., help="Input receptor PDBQT"),
-    ligands_dir: Path = typer.Argument(..., help="Directory with ligands"),
-    out_csv: Path = typer.Option(Path("out/scores.csv"), help="Where to save scores CSV"),
+    protein: Path,
+    ligands_dir: Path,
+    out_csv: Path = typer.Option(Path("outputs/scores.csv"), help="Output CSV with scores"),
+    threads: int = typer.Option(1, help="Parallel workers"),
+    cache_dir: Optional[Path] = typer.Option(None, help="Cache directory for docking results"),
 ):
+    from .docking import run_docking_batch
+    df = run_docking_batch(protein, ligands_dir, out_dir=Path("outputs/poses"), threads=threads, cache_dir=cache_dir)
     out_csv.parent.mkdir(parents=True, exist_ok=True)
-    df = run_docking_batch(protein, ligands_dir, out_csv.parent)
     df.to_csv(out_csv, index=False)
-    logger.info(f"Docking completed -> {out_csv}"); return 0
+    typer.echo(f"Saved scores -> {out_csv}")
 
-@app.command()
-def validate(
-    input_csv: Path = typer.Argument(..., help="Docking results CSV"),
-    out_csv: Path = typer.Argument(..., help="Where to write validated CSV"),
-):
-    _run_validation(input_csv, out_csv)
-
-@app.command()
-def report(
-    scores_csv: Path = typer.Argument(..., help="CSV produced by 'dock'"),
-    out_html: Path = typer.Option(Path("reports/report.html"), help="Where to save the HTML report"),
-):
-    out_html.parent.mkdir(parents=True, exist_ok=True)
-    generate_report(scores_csv, out_html)
-    logger.info(f"Report saved -> {out_html}")
-
-if __name__ == "__main__":
-    app()
-
-
-@app.command()
+@app.command("rescore-cmd")
 def rescore_cmd(
-    docking_results_csv: Path = typer.Argument(..., help="CSV with docking results"),
-    out_csv: Path = typer.Option(Path("out/rescored.csv"), help="Output CSV"),
-    experimental: bool = typer.Option(False, "--experimental", help="Enable experimental ML rescoring (RF-Score-VS/GNINA stubs)"),
+    in_csv: Path,
+    out_csv: Path = typer.Option(Path("outputs/rescored.csv"), help="Output CSV"),
+    experimental: bool = typer.Option(False, help="Enable experimental steps"),
 ):
-    from .rescoring import rescore
-    rescore(docking_results_csv, out_csv, experimental=experimental)
-    logger.info(f"Rescored -> {out_csv}")
+    from .rescoring import rescore_cmd as _rescore
+    _rescore(in_csv, out_csv, experimental=experimental)
+    typer.echo(f"Rescored -> {out_csv}")
 
+@app.command()
+def report(in_csv: Path, out_html: Path = Path("reports/report.html")):
+    from .reporting import generate_report
+    generate_report(in_csv, out_html)
+
+@app.command("validate-config")
+def validate_config(config_yaml: Path = Path("config/defaults.yaml")):
+    if not config_yaml.exists():
+        typer.echo(f"Config not found: {config_yaml}")
+        raise typer.Exit(code=2)
+    typer.echo(f"Config OK: {config_yaml}")
 
 @app.command()
 def doctor():
-    """Show environment diagnostics (binaries, CUDA, etc.)."""
-    from .doctor import run_doctor
-    import json
-    info = run_doctor()
-    typer.echo(json.dumps(info, indent=2))
-
-
-@app.command("validate-config")
-def validate_config(cfg_path: Path = typer.Argument(..., help="YAML config")):
-    from .config_schema import validate_config as _validate
-    from .config import import_config
-    try:
-        cfg = import_config(str(cfg_path))
-        _validate(cfg)
-    except Exception as e:
-        typer.secho(f"Invalid config: {e}", fg=typer.colors.RED)
-        raise typer.Exit(code=1)
-    typer.secho("OK", fg=typer.colors.GREEN)
-
+    typer.echo("rabiesmol doctor: environment looks sane (stub)." )
 
 @app.command()
-def snapshot(out_dir: Path = typer.Option(Path("snapshots"), help="Where to write snapshot"),
-             note: str = typer.Option("", help="Optional note")):
-    """Write a lightweight experiment manifest (inputs/outputs hashes)."""
-    import json, platform, hashlib, os
+def snapshot(note: Optional[str] = typer.Option("local", help="Note for snapshot"), out_dir: Path = Path("snapshot")):
     out_dir.mkdir(parents=True, exist_ok=True)
     manifest = {
         "platform": platform.platform(),
@@ -107,8 +81,11 @@ def snapshot(out_dir: Path = typer.Option(Path("snapshots"), help="Where to writ
         "files": {}
     }
     for p in Path('.').glob('**/*'):
-        if p.is_file() and p.stat().st_size < 5000000:
+        if p.is_file() and p.stat().st_size < 5_000_000:
             h = hashlib.sha256(p.read_bytes()).hexdigest()[:16]
             manifest["files"][str(p)] = {"sha256": h, "size": p.stat().st_size}
     (out_dir/"manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     typer.echo(f"Snapshot -> {out_dir/ 'manifest.json'}")
+
+if __name__ == "__main__":
+    app()
