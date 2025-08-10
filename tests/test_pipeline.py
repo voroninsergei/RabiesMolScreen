@@ -10,6 +10,9 @@ def patch_subprocess_run(monkeypatch):
         if "--out" in cmd:
             out_idx = cmd.index("--out") + 1
             Path(cmd[out_idx]).write_text("DUMMY OUTPUT")
+        if "-o" in cmd:
+            out_idx = cmd.index("-o") + 1
+            Path(cmd[out_idx]).write_text("DUMMY OUTPUT")
         if "--log" in cmd:
             log_idx = cmd.index("--log") + 1
             Path(cmd[log_idx]).write_text("1       -7.5    0.0  0.0")  # vina/smina log format
@@ -32,8 +35,7 @@ def test_prepare(tmp_path):
     from rabiesmol.prepare import clean_protein
     pdb_in = tmp_path / "prot.pdb"
     pdb_out = tmp_path / "clean.pdb"
-    pdb_in.write_text("HETATM      1  O   HOH A   1      11.000  11.000  11.000
-")
+    pdb_in.write_text("HETATM      1  O   HOH A   1      11.000  11.000  11.000\n")
     clean_protein(pdb_in, pdb_out)
     assert pdb_out.exists()
 
