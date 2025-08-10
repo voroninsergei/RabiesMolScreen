@@ -7,9 +7,13 @@ from typing import Optional
 import json
 import hashlib
 
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
+try:
+    import requests
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
+except Exception:
+    requests = None
+import urllib.request as _urllib
 from loguru import logger
 
 ALPHAFOLD_URL = "https://alphafold.ebi.ac.uk/files/{uniprot}-F1-model_v4.pdb"

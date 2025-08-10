@@ -1,4 +1,3 @@
-
 from pathlib import Path
 from typing import List
 from loguru import logger
@@ -11,45 +10,39 @@ def protonate_structure(input_file: Path, output_file: Path, ph: float = 7.4):
         "obabel",
         str(input_file),
         "-O", str(output_file),
-        "--pH", str(ph)
+        "--pH", str(ph),
     ]
-    logger.debug(f"Running: {'{'}' '.join(cmd){'}'}")
-        subprocess.run(cmd, check=True)
-    logger.info(f"Protonated {input_file} at pH {ph} -> {output_file}")
+    logger.debug(f"Running: {' '.join(cmd)}")
+    subprocess.run(cmd, check=True)
+    logger.info(f"Protonated {input_file} -> {output_file}")
 
-def prepare_proteins(input_dir: Path, output_dir: Path, ph: float = 7.4, keep_waters: List[str] | None = None):
-    """Prepare receptors to PDBQT via external toolchain.
-
-    In tests, subprocess is mocked to just create the outputs.
-    """
-    keep_waters = keep_waters or []
-    ensure_dir(output_dir)
-    for pdb in Path(input_dir).glob("*.pdb"):
-        protonated = output_dir / pdb.name.replace(".pdb", "_protonated.pdb")
-        prepared = output_dir / pdb.name.replace(".pdb", "_prepared.pdbqt")
-        if prepared.exists():
-            logger.info(f"Cached prepared protein: {prepared}")
-            continue
-        # Protonate and then call a hypothetical prepare_receptor tool
-        protonate_structure(pdb, protonated, ph=ph)
-        cmd = ["prepare_receptor", "-r", str(protonated), "-o", str(prepared)]
-        if keep_waters:
-            cmd += ["--keep-waters", ",".join(keep_waters)]
-        logger.debug(f"Running: {'{'}' '.join(cmd){'}'}")
+def _smi_to_sdf(smi_file: Path, out_sdf: Path) -> Path:
+    """Convert .smi to .sdf using OpenBabel if available."""
+    cmd = ["obabel", "-ismi", str(smi_file), "-O", str(out_sdf)]
+    logger.debug(f"Running: {' '.join(cmd)}")
+    try:
         subprocess.run(cmd, check=True)
-        logger.info(f"Prepared receptor: {prepared}")
+    except FileNotFoundError:
+        logger.error("OpenBabel (`obabel`) is required to convert SMILES. Please install OpenBabel or provide SDF.")
+        raise
+    return out_sdf
 
 def prepare_ligands(input_dir: Path, output_dir: Path, ph: float = 7.4):
     ensure_dir(output_dir)
-    for mol_file in Path(input_dir).glob("*.sdf"):
-        protonated_file = output_dir / mol_file.name.replace(".sdf", "_protonated.sdf")
-        prepared_file = output_dir / mol_file.name.replace(".sdf", "_prepared.pdbqt")
+    for mol_file in list(Path(input_dir).glob("*.sdf")) + list(Path(input_dir).glob("*.smi")):
+        protonated_file = output_dir / mol_file.name.replace(mol_file.suffix, "_protonated.sdf")
+        prepared_file = output_dir / mol_file.name.replace(mol_file.suffix, "_prepared.pdbqt")
 
         if prepared_file.exists():
             logger.info(f"Cached prepared ligand: {prepared_file}")
             continue
 
-        protonate_structure(mol_file, protonated_file, ph=ph)
+        source_file = mol_file
+        if mol_file.suffix.lower() == '.smi':
+            sdf_intermediate = output_dir / mol_file.name.replace('.smi', '.sdf')
+            source_file = _smi_to_sdf(mol_file, sdf_intermediate)
+
+        protonate_structure(source_file, protonated_file, ph=ph)
         logger.debug("Running: prepare_ligand")
         subprocess.run(["prepare_ligand", "-l", str(protonated_file), "-o", str(prepared_file)], check=True)
         logger.info(f"Prepared ligand: {prepared_file}")

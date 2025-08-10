@@ -10,7 +10,7 @@ report:
 	python -m rabiesmol.cli report outputs/scores.csv --out-html reports/report.html
 report-html: report
 validate-config:
-	python -m rabiesmol.cli validate-config config/example.yaml
+	python -m rabiesmol.cli validate-config config/defaults.yaml
 doctor:
 	python -m rabiesmol.cli doctor
 snapshot:

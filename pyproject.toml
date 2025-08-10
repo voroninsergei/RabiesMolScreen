@@ -23,3 +23,7 @@ dev = ["pytest>=7", "ruff>=0.4"]
 
 [project.scripts]
 rabiesmol = "rabiesmol.cli:app"
+
+viz = ["plotly>=5"]
+
+validation = ["rdkit-pypi"]

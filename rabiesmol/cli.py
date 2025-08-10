@@ -7,7 +7,7 @@ from .logging_config import get_logger
 from .prepare import prepare_proteins, prepare_ligands
 from .docking import run_docking_batch
 from .reporting import generate_report
-from .validation import validate_and_cluster
+# lazy import; see _run_validation()
 
 app = typer.Typer(help="rabiesmol: Unified CLI for ligand prep, docking, and reporting.")
 logger = get_logger(__name__)
@@ -46,7 +46,7 @@ def validate(
     input_csv: Path = typer.Argument(..., help="Docking results CSV"),
     out_csv: Path = typer.Argument(..., help="Where to write validated CSV"),
 ):
-    validate_and_cluster(input_csv, out_csv)
+    _run_validation(input_csv, out_csv)
 
 @app.command()
 def report(
