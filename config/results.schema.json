@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RabiesMol Docking Results",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "ligand_id": {
+      "type": "string"
+    },
+    "protein_id": {
+      "type": "string"
+    },
+    "engine": {
+      "type": "string"
+    },
+    "pose_id": {
+      "type": "integer"
+    },
+    "score": {
+      "type": "number"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "ligand_smiles": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "ligand_id",
+    "protein_id",
+    "engine",
+    "pose_id",
+    "score",
+    "unit"
+  ]
+}

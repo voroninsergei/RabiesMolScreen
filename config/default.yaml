@@ -1,0 +1,7 @@
+# Example config for RabiesMolScreen
+data_dir: data
+outputs: outputs/run1
+engine: vina
+docking:
+  center: [0.0, 0.0, 0.0]
+  size: [20.0, 20.0, 20.0]
